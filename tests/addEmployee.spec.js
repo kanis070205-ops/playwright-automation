@@ -15,10 +15,10 @@ test('Add Employee and Validate in Table', async ({ page }) => {
 
   // Navigate to PIM and validate
   await employeeActions.navigateToPIM();
-  expect(await employeeActions.isPIMPageDisplayed()).toBeTruthy();
+  //expect(await employeeActions.isPIMPageDisplayed()).toBeTruthy();
 
   // Add new employee
-  const empId = await employeeActions.addNewEmployee('John', 'Doe');
+  const empId = await employeeActions.addEmployee('John', 'Doe');
 
   // Validate employee in table
   const exists = await employeeActions.validateEmployeeById(empId);

@@ -7,8 +7,9 @@ class LoginPage {
   }
 
   async goto() {
-    await this.page.goto('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
-  }
+  await this.page.goto('/web/index.php/auth/login');
+}
+  
 
   async login(username, password) {
     await this.usernameInput.fill(username);

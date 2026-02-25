@@ -1,61 +1,67 @@
-const DashboardPage = require('../pages/DashboardPage');
-const PIMPage = require('../pages/PIMPage');
 const AddEmployeePage = require('../pages/AddEmployeePage');
-
+const { expect } = require('@playwright/test');
 class EmployeeActions {
   constructor(page) {
-    this.dashboard = new DashboardPage(page);
-    this.pim = new PIMPage(page);
-    this.addEmployeePage = new AddEmployeePage(page);
     this.page = page;
-
+    this.addEmployeePage = new AddEmployeePage(page);
     this.lastAddedEmployeeId = null;
   }
 
-  async addNewEmployee(firstName, lastName) {
-    // Open Add Employee tab
-    const addEmployeeTab = this.page.locator('a.oxd-topbar-body-nav-tab-item', { hasText: 'Add Employee' });
-    await addEmployeeTab.waitFor({ state: 'visible', timeout: 5000 });
-    await addEmployeeTab.click();
-    await this.page.waitForLoadState('networkidle');
-
-    // Fill employee details and get the auto-generated Employee ID
-    const empId = await this.addEmployeePage.addEmployee(firstName, lastName);
-
-    this.lastAddedEmployeeId = empId;
-
-    return empId;
-  }
-
-  getLastAddedEmployeeId() {
-    return this.lastAddedEmployeeId || this.addEmployeePage.getLastAddedEmployeeId();
-  }
-
-  async validateEmployeeById(employeeId) {
-    const idToCheck = employeeId || this.getLastAddedEmployeeId();
-    if (!idToCheck) throw new Error('Cannot validate: Employee ID is empty');
-
-    // Go to Employee List tab
-    const employeeListTab = this.page.locator('a.oxd-topbar-body-nav-tab-item', { hasText: 'Employee List' });
-    await employeeListTab.click();
-    await this.page.waitForLoadState('networkidle');
-
-    // Wait for table to appear
-    const tableContainer = this.page.locator('div.orangehrm-employee-list');
-    await tableContainer.waitFor({ state: 'visible', timeout: 15000 });
-
-    // SPA-safe: find the row containing the Employee ID
-    const row = tableContainer.locator(`div[role="row"]:has(div.data:has-text("${idToCheck}"))`);
-    return (await row.count()) > 0;
- 
-  }
-
   async navigateToPIM() {
-    const pimTab = this.page.locator('a.oxd-topbar-body-nav-tab-item', { hasText: 'PIM' });
-    await pimTab.waitFor({ state: 'visible', timeout: 5000 });
-    await pimTab.click();
-    await this.page.waitForLoadState('networkidle');
+    await this.page.getByRole('link', { name: 'PIM' }).click();
+  }
+
+  // ✅ Only ONE method to add employee
+  async addEmployee(firstName, lastName) {
+    // Open Add Employee page
+    await this.page.getByRole('link', { name: 'Add Employee' }).click();
+
+    await this.page.locator('h6:has-text("Add Employee")').waitFor({
+      state: 'visible',
+      timeout: 10000,
+    });
+
+    // Delegate to Page Object
+    const employeeId = await this.addEmployeePage.addEmployee(
+      firstName,
+      lastName
+    );
+
+    console.log('=================================');
+    console.log('Employee Created Successfully');
+    console.log('Captured Employee ID:', employeeId);
+    console.log('=================================');
+
+    this.lastAddedEmployeeId = employeeId;
+
+    return employeeId;
+  }
+
+
+
+async validateEmployeeById(id) {
+  if (!id) throw new Error('Employee ID is empty');
+
+  await this.page.goto(
+    '../web/index.php/pim/viewEmployeeList'
+  );
+
+  await this.page.locator('h5:has-text("Employee Information")').waitFor();
+
+  const tableBody = this.page.locator('.oxd-table-body');
+
+  const row = tableBody.locator('.oxd-table-row', {
+    has: this.page.locator('.oxd-table-cell', { hasText: id }),
+  });
+
+  await expect(row).toBeVisible({ timeout: 15000 });
+
+  console.log('Employee ID Found in Desktop Table:', id);
+
+  return true;
 }
 }
+
+
 
 module.exports = EmployeeActions;

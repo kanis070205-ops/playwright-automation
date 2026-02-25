@@ -5,43 +5,36 @@ class AddEmployeePage {
     this.firstNameInput = page.locator('input[name="firstName"]');
     this.lastNameInput = page.locator('input[name="lastName"]');
 
-    // Employee ID is auto-generated
-    this.employeeIdInput = page.locator('(//input[@class="oxd-input oxd-input--active"])[2]');
-    this.saveButton = page.locator('button.oxd-button--secondary', { hasText: 'Save' });
+    this.employeeIdInput = page.locator(
+      '//label[text()="Employee Id"]/ancestor::div[contains(@class,"oxd-input-group")]//input'
+    );
 
-    // Store the last added Employee ID internally
-    this.lastAddedEmployeeId = null;
+    this.saveButton = page.getByRole('button', { name: 'Save' });
   }
 
   async addEmployee(firstName, lastName) {
-    // Fill first and last name
+    // Fill employee details
     await this.firstNameInput.fill(firstName);
     await this.lastNameInput.fill(lastName);
 
-    // Capture the system-generated Employee ID BEFORE clicking Save
+    // Capture auto-generated Employee ID BEFORE Save
     const employeeId = await this.employeeIdInput.inputValue();
-    if (!employeeId) throw new Error("Employee ID not found before Save");
+    if (!employeeId) throw new Error('Employee ID not generated');
 
-    this.lastAddedEmployeeId = employeeId;
+    console.log('Captured Employee ID (Before Save):', employeeId);
 
     // Click Save
-    await this.saveButton.scrollIntoViewIfNeeded();
     await this.saveButton.click();
 
-    // Wait for Personal Details page to load (SPA-safe)
+    // Wait for Personal Details page
     await this.page.locator('h6:has-text("Personal Details")').waitFor({
       state: 'visible',
-      timeout: 20000
+      timeout: 20000,
     });
 
-    await this.page.waitForLoadState('networkidle');
-
     return employeeId;
-  }
-
-  getLastAddedEmployeeId() {
-    return this.lastAddedEmployeeId;
   }
 }
 
 module.exports = AddEmployeePage;
+
